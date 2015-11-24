@@ -4,20 +4,23 @@ using std::cout;
 using std::endl;
 using std::flush;
 
-class oset;
-void print(oset& OS);       // for debugging
+template <class T> class oset;
+template <class T> void print(oset& OS);       // for debugging
 
 // Non-generic starter code.
 //
 // *** THIS SKELETON ENVISIONS INTEGER ELEMENTS.
 // *** YOUR VERSION SHOULD BE POLYMORPHIC.
 //
+template <class T>
 class oset {
     class node {
      public:
-        const int val;
+        //const int val;
+        const T val;
         node *next;
-        node(int v) : val(v), next(NULL) { }
+        //node(int v) : val(v), next(NULL) { }
+        node(T v) : val(v), next(NULL) { }
     };
     node head;
         // NB: _not_ node*.  There's a dummy node here, with garbage val;
@@ -174,9 +177,6 @@ public:
     // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
     //
     oset& operator+=(oset& other) {
-//        for (iter i = other.begin(); i != other.end(); ++i) {
-//            operator+=(*i);
-//        }
         iter i = begin();
         iter j = other.begin();
         while(i != end() && j != other.end()){
@@ -184,10 +184,6 @@ public:
                 ++i;
                 ++j;
             } else if (*i < *j) {
-//                operator+=(*j);
-                node* n = new node(*j);
-                n->next = i.pos->next;
-                i.pos->next = n;
                 ++i;
             } else {
                 //operator+=(*j);
@@ -196,77 +192,90 @@ public:
                 i.pos->next = n;
                 ++j;
             }
+
         }
         if(i == end()){
             while (j != other.end()) {
 //                operator+=(*j);
                 node* n = new node(*j);
-                n->next = i.pos->next;
                 i.pos->next = n;
                 ++j;
+                ++i;
             }
         }
 
         return *this;
     }
-
+    /*
+    oset& operator n2+=(oset& other) {
+        for (iter i = other.begin(); i != other.end(); ++i) {
+            operator+=(*i);
+        }
+    }
+    */
     // Set difference.
     //
     // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
     //
-    oset& operator-=(oset& other) {
+    oset& operator -=(oset& other) {
+        iter i = begin();
+        iter j = other.begin();
+        while(i != end() && j != other.end()){
+          if(*i == *j){
+               node* t;
+                if ((t = i.pos->next) != NULL && i.pos->next->val == *j) {
+                    // already present
+                    i.pos->next = t->next;
+                    delete t;
+                }
+                ++j;
+            } else if (*i < *j) {
+                ++i;
+            } else {
+                ++j;
+            }
+
+        }
+        return *this;
+    }
+    /*
+    oset& operator n2-=(oset& other) {
         for (iter i = other.begin(); i != other.end(); ++i) {
             operator-=(*i);
         }
-        return *this;
-/*
-        iter i = begin();
-        iter j = other.begin();
-        while(i != other.end() && j != end()){
-          if(*i == *j){
-                ++j;
-                ++i;
-            } else if (*i < *j) {
-//                operator+=(*j);
-                node* t = i.pos->next;
-                i.pos->next = t->next;
-                delete t;
-//                node* n = new node(*j);
-//                n->next = i.pos->next;
-//                i.pos->next = n;
-                ++i;
-            } else {
-                //operator+=(*j);
-                node* t = i.pos->next;
-                i.pos->next = t->next;
-                delete t;
-//                node* n = new node(*j);
-//                n->next = i.pos->next;
-//                i.pos->next = n;
-                ++j;
-            }
-        }
-        if(i == end()){
-            while (j != other.end()) {
-                //operator+=(*j);
-                node* t = i.pos->next;
-                i.pos->next = t->next;
-                delete t;
-//                node* n = new node(*j);
-//                n->next = i.pos->next;
-//                i.pos->next = n;
-                ++j;
-            }
-        }
-*/
-        return *this;
     }
-
-    // Intersection.
+    */
+    // Intersection
     //
     // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
     //
     oset& operator*=(oset& other) {
+        oset temp;      // empty
+
+        iter i = begin();
+        iter j = other.begin();
+        iter k = temp.begin();
+        while(i != end() && j != other.end()){
+          if(*i == *j){
+                node* n = new node(*i);
+                k.pos->next = n;
+                ++j;
+                ++k;
+            } else if (*i < *j) {
+                ++i;
+            } else {
+                ++j;
+            }
+        }
+
+        clear();
+        operator+=(temp);   // union
+        // NB: temp is destructed as we leave this scope
+        return *this;
+
+    }
+    /*
+    oset& operator n2*=(oset& other) {
         oset temp;      // empty
         for (iter i = begin(); i != end(); ++i) {
             if (other[*i]) temp+=(*i);
@@ -276,8 +285,10 @@ public:
         // NB: temp is destructed as we leave this scope
         return *this;
     }
+    */
 };
 
+template <class T> 
 void print(oset& OS) {
     for (oset::iter i = OS.begin(); i != OS.end(); ++i) {
         cout << *i << " ";
