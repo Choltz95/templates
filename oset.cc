@@ -26,47 +26,30 @@
 */
 #include "oset.h"
 
-
+// COMPARATORS FOR TESTING
 int comparator_cs(const std::string x, const std::string y) {
-    //return strcmp(x,y);
-    if (x == y){
-        return 0;
-    } else if (x > y){
-        return 1;
-    } else {
-        return -1;
-    }
+    if (x == y) { return 0; } 
+    else if (x > y) { return 1; } 
+    else { return -1; }
 }
 
 int comparator_ci(const std::string x, const std::string y) {
-
-    if (x == y){
-        return 0;
-    } else if (x > y){
-        return 1;
-    } else {
-        return -1;
-    }
+    // convert to lower case here
+    if (x == y) { return 0; } 
+    else if (x > y) { return 1; } 
+    else { return -1; }
 }
 
 int comparator_int(const int x, const int y) {
-    if (x == y){
-        return 0;
-    } else if (x > y){
-        return 1;
-    } else {
-        return -1;
-    }
+    if (x == y) { return 0; } 
+    else if (x > y) { return 1; } 
+    else { return -1; }
 }
 
 int comparator_d( double x, const double y) {
-    if (x == y){
-        return 0;
-    } else if (x > y){
-        return 1;
-    } else {
-        return -1;
-    }
+    if (x == y) { return 0; } 
+    else if (x > y) { return 1; } 
+    else { return -1; }
 }
 
 int main() { 
