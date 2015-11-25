@@ -1,11 +1,13 @@
 #include <iostream>
 #include <typeinfo>
+#include <string.h>
+
 using std::cout;
 using std::endl;
 using std::flush;
 
 template <class T> class oset;
-template <class T> void print(oset& OS);       // for debugging
+template <class T> void print(oset<T>& OS);       // for debugging
 
 // Non-generic starter code.
 //
@@ -16,12 +18,12 @@ template <class T>
 class oset {
     class node {
      public:
-        //const int val;
         const T val;
         node *next;
-        //node(int v) : val(v), next(NULL) { }
         node(T v) : val(v), next(NULL) { }
+        node(): val(), next(NULL) { }
     };
+    int(*comparator)(const T x, const T y);
     node head;
         // NB: _not_ node*.  There's a dummy node here, with garbage val;
         // Existence of this node avoids several special cases in the
@@ -39,7 +41,7 @@ class oset {
         iter(node* n) : pos(n) { }
     friend class oset;      // so oset can call the (private) constructor
     public:   
-        const int& operator*() {
+        const T& operator*() {
             return pos->next->val;
         }
         // support forward iteration.  This is prefix version (++p).
@@ -72,21 +74,40 @@ class oset {
 
     //--------------------------------------
     // Constructors and destructor
-
     // new empty set:
-    oset() : head(0), beyond(0), start(&head), finish(&beyond) {
+/*    oset() : head(), beyond(), start(&head), finish(&beyond) {
         head.next = NULL;
+    }
+*/
+    oset(int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
+        head.next = NULL;
+        comparator = f;
     }
 
     // new singleton set:
-    oset(int v) : head(0), beyond(0), start(&head), finish(&beyond) {
+/*    oset(T v) : head(), beyond(), start(&head), finish(&beyond) {
         head.next = new node(v);
+    }
+*/    oset(T v, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
+        head.next = new node(v);
+        comparator = f;
     }
 
     // copy constructor:
-    oset(oset& other) : head(0), beyond(0), start(&head), finish(&beyond) {
+/*    oset(oset& other) : head(), beyond(), start(&head), finish(&beyond) {
         node *o = other.head.next;
         node *n = &head;
+        while (o) {
+            n->next = new node(o->val);
+            o = o->next;
+            n = n->next;
+        }
+        n->next = NULL;
+    }
+*/    oset(oset& other, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
+        node *o = other.head.next;
+        node *n = &head;
+        comparator = f;
         while (o) {
             n->next = new node(o->val);
             o = o->next;
@@ -124,27 +145,28 @@ private:
     // Return pointer to last node with val < v
     //
     // *** THIS CODE IMPLICITLY REQUIRES A >= OPERATOR FOR THE SET
-    // *** ELEMENT TYPE.  YOU NEED TO MAKE THAT EXPLICIT
+    // *** ELEMENT TYPE. YOU NEED TO MAKE THAT EXPLICIT
     // *** (IN DIFFERENT WAYS IN DIFFERENT VERSIONS OF THE CODE).
     //
-    node* find_prev(const int v) {
+    node* find_prev(T v) {
         node* p = &head;
         while (true) {
             if (p->next == NULL) return p;
-            if (p->next->val >= v) return p;
+            if (comparator(p->next->val, v) == 0 || comparator(p->next->val, v) > 0) return p; // comparator
+            //if (p->next->val >= v) return p;
             p = p->next;
         }
     }
         
 public:
     // find -- return true iff present:
-    bool operator[](const int v) {
+    bool operator[](T v) {
         node* p = find_prev(v);
         return (p->next != NULL && p->next->val == v);
     }
 
     // insert v if not already present; return ref to self
-    oset& operator+=(const int v) {
+    oset& operator+=(T v) {
         node* p = find_prev(v);
         if (p->next == NULL || p->next->val != v) {
             node* n = new node(v);
@@ -155,7 +177,7 @@ public:
     }
 
     // remove v if present; return ref to self
-    oset& operator-=(const int v) {
+    oset& operator-=(T v) {
         node* p = find_prev(v);
         node* t;
         if ((t = p->next) != NULL && p->next->val == v) {
@@ -222,7 +244,7 @@ public:
         iter j = other.begin();
         while(i != end() && j != other.end()){
           if(*i == *j){
-               node* t;
+                node* t;
                 if ((t = i.pos->next) != NULL && i.pos->next->val == *j) {
                     // already present
                     i.pos->next = t->next;
@@ -230,11 +252,11 @@ public:
                 }
                 ++j;
             } else if (*i < *j) {
+                //else if (comparator(*i,*j) < 0){
                 ++i;
             } else {
                 ++j;
             }
-
         }
         return *this;
     }
@@ -250,8 +272,8 @@ public:
     // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
     //
     oset& operator*=(oset& other) {
-        oset temp;      // empty
-
+        oset temp(comparator); // take comparator of this in 'this.intersect(...)'
+        //oset temp;
         iter i = begin();
         iter j = other.begin();
         iter k = temp.begin();
@@ -289,8 +311,8 @@ public:
 };
 
 template <class T> 
-void print(oset& OS) {
-    for (oset::iter i = OS.begin(); i != OS.end(); ++i) {
+void print(oset<T>& OS) {
+    for (typename oset<T>::iter i = OS.begin(); i != OS.end(); ++i) {
         cout << *i << " ";
     }
     cout << endl;
