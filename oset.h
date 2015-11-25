@@ -9,11 +9,6 @@ using std::flush;
 template <class T> class oset;
 template <class T> void print(oset<T>& OS);       // for debugging
 
-// Non-generic starter code.
-//
-// *** THIS SKELETON ENVISIONS INTEGER ELEMENTS.
-// *** YOUR VERSION SHOULD BE POLYMORPHIC.
-//
 template <class T>
 class oset {
     class node {
@@ -75,36 +70,19 @@ class oset {
     //--------------------------------------
     // Constructors and destructor
     // new empty set:
-/*    oset() : head(), beyond(), start(&head), finish(&beyond) {
-        head.next = NULL;
-    }
-*/
     oset(int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
         head.next = NULL;
         comparator = f;
     }
 
     // new singleton set:
-/*    oset(T v) : head(), beyond(), start(&head), finish(&beyond) {
-        head.next = new node(v);
-    }
-*/    oset(T v, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
+    oset(T v, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
         head.next = new node(v);
         comparator = f;
     }
 
     // copy constructor:
-/*    oset(oset& other) : head(), beyond(), start(&head), finish(&beyond) {
-        node *o = other.head.next;
-        node *n = &head;
-        while (o) {
-            n->next = new node(o->val);
-            o = o->next;
-            n = n->next;
-        }
-        n->next = NULL;
-    }
-*/    oset(oset& other, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
+    oset(oset& other, int(*f)(const T x, const T y)) : head(), beyond(), start(&head), finish(&beyond) {
         node *o = other.head.next;
         node *n = &head;
         comparator = f;
@@ -153,7 +131,6 @@ private:
         while (true) {
             if (p->next == NULL) return p;
             if (comparator(p->next->val, v) == 0 || comparator(p->next->val, v) > 0) return p; // comparator
-            //if (p->next->val >= v) return p;
             p = p->next;
         }
     }
@@ -195,37 +172,39 @@ public:
     // (as illustrated in the code for intersection below).
 
     // Union.
-    //
-    // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
-    //
     oset& operator+=(oset& other) {
+        // comparators not equivalent, use n^2 algorithm
+        if(comparator != other.comparator) {
+            for (iter i = other.begin(); i != other.end(); ++i) {
+                operator+=(*i);
+            }
+        }
+
         iter i = begin();
         iter j = other.begin();
         while(i != end() && j != other.end()){
-          if(*i == *j){
+          //if(*i == *j){
+            if(comparator(*i, *j) == 0){
                 ++i;
                 ++j;
-            } else if (*i < *j) {
+            } else if (comparator(*i, *j) < 0) {
+            //else if (*i < *j) {
                 ++i;
             } else {
-                //operator+=(*j);
                 node* n = new node(*j);
                 n->next = i.pos->next;
                 i.pos->next = n;
                 ++j;
             }
-
         }
         if(i == end()){
             while (j != other.end()) {
-//                operator+=(*j);
                 node* n = new node(*j);
                 i.pos->next = n;
                 ++j;
                 ++i;
             }
         }
-
         return *this;
     }
     /*
@@ -236,14 +215,17 @@ public:
     }
     */
     // Set difference.
-    //
-    // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
-    //
     oset& operator -=(oset& other) {
+        if(comparator != other.comparator) {
+            for (iter i = other.begin(); i != other.end(); ++i) {
+                operator-=(*i);
+            }
+        }
+
         iter i = begin();
         iter j = other.begin();
         while(i != end() && j != other.end()){
-          if(*i == *j){
+          if(comparator(*i, *j) == 0){
                 node* t;
                 if ((t = i.pos->next) != NULL && i.pos->next->val == *j) {
                     // already present
@@ -251,8 +233,7 @@ public:
                     delete t;
                 }
                 ++j;
-            } else if (*i < *j) {
-                //else if (comparator(*i,*j) < 0){
+            } else if (comparator(*i, *j) < 0) {
                 ++i;
             } else {
                 ++j;
@@ -268,22 +249,29 @@ public:
     }
     */
     // Intersection
-    //
-    // *** THIS CODE HAS COST O(N^2).  IT SHOULD BE O(N).
-    //
     oset& operator*=(oset& other) {
         oset temp(comparator); // take comparator of this in 'this.intersect(...)'
-        //oset temp;
+        
+        if(comparator != other.comparator) {
+            for (iter i = begin(); i != end(); ++i) {
+                if (other[*i]) temp+=(*i);
+            }
+            clear();
+            operator+=(temp);   // union
+            // NB: temp is destructed as we leave this scope
+            return *this;
+        }
+
         iter i = begin();
         iter j = other.begin();
         iter k = temp.begin();
         while(i != end() && j != other.end()){
-          if(*i == *j){
+          if(comparator(*i, *j) == 0){
                 node* n = new node(*i);
                 k.pos->next = n;
                 ++j;
                 ++k;
-            } else if (*i < *j) {
+            } else if (comparator(*i, *j) < 0) {
                 ++i;
             } else {
                 ++j;
@@ -294,7 +282,6 @@ public:
         operator+=(temp);   // union
         // NB: temp is destructed as we leave this scope
         return *this;
-
     }
     /*
     oset& operator n2*=(oset& other) {
@@ -310,6 +297,7 @@ public:
     */
 };
 
+// set printer
 template <class T> 
 void print(oset<T>& OS) {
     for (typename oset<T>::iter i = OS.begin(); i != OS.end(); ++i) {

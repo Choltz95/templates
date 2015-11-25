@@ -1,15 +1,4 @@
 /*
-    Starter code for assignment 5, CSC 254, Fall 2015
-
-    Provides skeleton of code for generic ordered sets.
-
-    Everything but /main/ should be moved to a .h file, which should
-    then be #included from here.
-
-    Be sure to read the assignment web page carefully.
-    Then search for all-caps comments preceded by '***' for hints as to
-    where you should make changes.
-
     A couple warnings:
 
     (1) Don't try to modify an oset while you're iterating over it.
@@ -25,6 +14,10 @@
         evaluate S[9] before it evaluates (S += 9)).
 */
 #include "oset.h"
+#include <locale>         // std::locale, std::tolower
+#include <algorithm>
+#include <string>
+
 
 // COMPARATORS FOR TESTING
 int comparator_cs(const std::string x, const std::string y) {
@@ -35,8 +28,20 @@ int comparator_cs(const std::string x, const std::string y) {
 
 int comparator_ci(const std::string x, const std::string y) {
     // convert to lower case here
-    if (x == y) { return 0; } 
-    else if (x > y) { return 1; } 
+    std::locale loc1;
+    std::locale loc2;
+    std::string x_w; //writeable strings for lowercase x, y
+    std::string y_w;
+
+    x_w = x;
+    y_w = y;   
+
+    //to lower in one line
+    transform(x_w.begin(), x_w.end(), x_w.begin(),(int (*)(int))tolower);
+    transform(y_w.begin(), y_w.end(), y_w.begin(),(int (*)(int))tolower);
+
+    if (x_w == y_w) { return 0; } 
+    else if (x_w > y_w) { return 1; } 
     else { return -1; }
 }
 
@@ -89,7 +94,6 @@ int main() {
     oset <int> AmB(A,comparator_int);  AmB -= B;  print(AmB);            // 3 4
     oset <int> AiB(A,comparator_int);  AiB *= B;  print(AiB);            // 5
 
-
     cout << "*****DOUBLES*****" << endl;
 
     oset <double> Sd(comparator_d);     // empty set
@@ -126,7 +130,7 @@ int main() {
     oset <double> AmBd(Ad,comparator_d);  AmBd -= Bd;  print(AmBd);            // 3 4
     oset <double> AiBd(Ad,comparator_d);  AiBd *= Bd;  print(AiBd);            // 5
     
-    cout << "*****STRINGS*****" << endl;
+    cout << "*****STRINGS (case sensitive)*****" << endl;
 
     oset <std::string> Ss(comparator_cs);     // empty set
     Ss += "a";     // now should contain 3
@@ -155,13 +159,57 @@ int main() {
     print(Us);                       // 3 7
     print(Vs);                       // 3 5
 
-    oset <std::string> As(comparator_cs);  ((As += "c") += "a") += "b";  print(As);       // 3 4 5
-    oset <std::string> Bs(comparator_cs);  ((Bs += "e") += "c") += "d";  print(Bs);       // 5 6 7
+    oset <std::string> As(comparator_cs);  ((As += "cAT") += "a") += "b";  print(As);       // 3 4 5
+    oset <std::string> Bs(comparator_cs);  ((Bs += "erG") += "c") += "D";  print(Bs);       // 5 6 7
 
     oset <std::string> AuBs(As, comparator_cs); AuBs += Bs; print(AuBs);            // 3 4 5 6 7
     oset <std::string> AmBs(As, comparator_cs); AmBs -= Bs; print(AmBs);            // 3 4
     oset <std::string> AiBs(As, comparator_cs); AiBs *= Bs; print(AiBs);            // 5 
 
+    cout << "*****STRINGS (case insensitive)*****" << endl;
+
+    oset <std::string> Sss(comparator_ci);     // empty set
+    Sss += "a";     // now should contain 3
+
+    cout << Sss["a"] << " ";            // should print 1 (true) : 3 is in S
+    Sss += "a";                         // should be a no-op
+    cout << Sss["c"] << endl;           // should print 0 (false) : 5 not in S
+
+    (Sss += "c") += "d";
+    print(Sss);                       // should print 3 5 7
+
+    oset <std::string> Tss("a", comparator_ci);                      // singleton
+
+    print(Tss);                       // should print 3
+
+    oset <std::string> Uss(Sss, comparator_ci);                      // copy of S
+    oset <std::string> Vss(Sss, comparator_ci);                      // copy of S
+
+    oset <std::string> Wss(comparator_ci);  Wss = Sss;  print(Wss);      // 3 5 7
+
+    Sss -= "b";                         // should be a no-op
+    Sss -= "a";
+    Uss -= "c";
+    Vss -= "d";
+    print(Sss);                       // 5 7
+    print(Uss);                       // 3 7
+    print(Vss);                       // 3 5
+
+    oset <std::string> Ass(comparator_ci);  ((Ass += "cAT") += "a") += "b";  print(Ass);       // 3 4 5
+    oset <std::string> Bss(comparator_ci);  ((Bss += "erG") += "c") += "D";  print(Bss);       // 5 6 7
+
+    oset <std::string> AuBss(Ass, comparator_ci); AuBss += Bss; print(AuBss);            // 3 4 5 6 7
+    oset <std::string> AmBss(Ass, comparator_ci); AmBss -= Bss; print(AmBss);            // 3 4
+    oset <std::string> AiBss(Ass, comparator_ci); AiBss *= Bss; print(AiBss);            // 5 
+
+    cout << "*****DIFFERING COMPARATORS*****" << endl;
+
+    oset <std::string> Asss(comparator_ci);  ((Asss += "cAT") += "a") += "b";  print(Asss);       // 3 4 5
+    oset <std::string> Bsss(comparator_cs);  ((Bsss += "erG") += "c") += "D";  print(Bsss);       // 5 6 7
+
+    oset <std::string> AuBsss(Asss, comparator_ci); AuBsss += Bsss; print(AuBsss);            // 3 4 5 6 7
+    oset <std::string> AmBsss(Asss, comparator_ci); AmBsss -= Bsss; print(AmBsss);            // 3 4
+    oset <std::string> AiBsss(Asss, comparator_ci); AiBsss *= Bsss; print(AiBsss);            // 5 
 // TESTS WITHOUT COMPARATOR ARGUMENT
 /*    
     cout << "*****INTS*****" << endl;
@@ -272,5 +320,4 @@ int main() {
     oset <std::string> AmBs(As); AmBs -= Bs; print(AmBs);            // 3 4
     oset <std::string> AiBs(As); AiBs *= Bs; print(AiBs);            // 5
 */
-
 }
